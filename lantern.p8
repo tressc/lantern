@@ -112,7 +112,8 @@ function _draw()
 	draw_map()
 
 	illuminate(x,y,rby)
-		draw_lit_orbs()
+-- causes frame drops :(
+--	draw_lit_orbs()
 	draw_player()
 end
 
