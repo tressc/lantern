@@ -24,6 +24,46 @@ function _init()
 		{x=pso,y=pso-8},
 		{x=pso,y=pso+16	},
 	}
+	-- look ahead
+	la={
+		-- left
+		{
+			p1x=pso-ma,
+			p1y=pso,
+			p2x=pso-ma,
+			p2y=pso+8,
+			dx=-ma,
+			dy=0
+		},
+		-- right
+		{
+			p1x=pso+8,
+			p1y=pso,
+			p2x=pso+8,
+			p2y=pso+8,
+			dx=ma,
+			dy=0
+		},
+		-- up
+		{
+			p1x=pso,
+			p1y=pso-ma,
+			p2x=pso+8,
+			p2y=pso-ma,
+			dx=0,
+			dy=-ma
+		},
+		-- down
+		{
+			p1x=pso,
+			p1y=pso+8,
+			p2x=pso+8,
+			p2y=pso+8,
+			dx=0,
+			dy=ma
+		}
+	}
+	-- log2 table
 	logs={0,1,0,2,0,0,0,3}
 	--	floor tile coords
 	ft=6
@@ -43,7 +83,7 @@ function _init()
 		yellow={}
 	}
 	--color map
-	color_map={'red','blue','yellow'}
+	c_map={'red','blue','yellow'}
 	--reverse map
 	r_map={red=1,blue=2,yellow=3}
 	--	current color 1/2/3
@@ -67,7 +107,7 @@ function _draw()
 	draw_overwrites()
 	illuminate()
 	draw_player()
-	pset(x+pso-ma, y+pso, 11)
+	pset(x+pso, y+pso, 11)
 end
 
 
@@ -78,22 +118,22 @@ function _update()
   	facing=1
    sprite_no=side
    sprite_flip=false
-   move(x+neg,y+pso,-ma,0)
+			move(la[1])
   end
   if (btn(1)) then
   	facing=2
    sprite_no=side sprite_flip=true 
-  	move(x+pos,y+pso,ma,0)
+			move(la[2])
   end
   if (btn(2)) then
   	facing=3
    sprite_no=back
-			move(x+pso,y+neg,0,-ma)
+			move(la[3])
   end
   if (btn(3)) then
   	facing=4
    sprite_no=front
-   move(x+pso,y+pos,0,ma)
+   move(la[4])
   end
   if (btnp(4)) and not in_wall then change_color() end
 		if (btnp(5)) and not in_wall then activate_orb() end
@@ -141,15 +181,17 @@ end
 
 
 function draw_overwrites()
-	for tile in all(overwrite.blue) do
-		pal(colors[2])
-		for i=0,1 do
-			for j=0,1 do
-				spr(ft, (tile.x+i)*8, (tile.y+j)*8)
+	for c in pairs(overwrite) do
+		for tile in all(overwrite[c]) do
+			pal(colors[r_map[c]])
+			for i=0,1 do
+				for j=0,1 do
+					spr(ft, (tile.x+i)*8, (tile.y+j)*8)
+				end
 			end
-		end
-		pal()
-	end 
+			pal()
+		end 
+	end
 end
 -->8
 function is_solid(x,y)
@@ -171,13 +213,15 @@ function is_solid(x,y)
 end
 
 
-function move(nx,ny,dx,dy)
-	-- new_x,new_y,delta_x,delta_y
-	if not is_solid(nx,ny) then
-		x=x+dx
-		y=y+dy	 
+function move(dir)
+	local s1=is_solid(x+dir.p1x,y+dir.p1y)
+	local s2=is_solid(x+dir.p2x,y+dir.p2y)
+	if not s1 and not s2 then
+		x=x+dir.dx
+		y=y+dir.dy
 	end
 end
+
 
 function change_color()
 	-- return early if all orbs lit
@@ -212,11 +256,11 @@ function activate_orb()
 			orbs[c]=false
 			rby=c
 			place_orb(xoff,yoff,'empty')
-			rm_overwrites('blue')
+			rm_overwrites(c_map[c])
 		else
 			-- orb is empty, deposit flame
 			orbs[rby]=true
-			place_orb(xoff,yoff,color_map[rby])
+			place_orb(xoff,yoff,c_map[rby])
 			change_color()
 		end
 	end 
